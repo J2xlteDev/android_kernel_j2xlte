@@ -1141,6 +1141,7 @@ start_trb_queuing:
 					break;
 			}
 			dbg_queue(dep->number, &req->request, trbs_left);
+			
 			if (last_one)
 				break;
 		} else {
