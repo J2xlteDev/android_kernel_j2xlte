@@ -177,3 +177,5 @@ obj-$(CONFIG_SPRD_IQ)           += iq/
 obj-$(CONFIG_GATOR)		+= gator/
 obj-$(CONFIG_CORESIGHT)		+= coresight/
 obj-$(CONFIG_TEE_SUPPORT)	+= tee/
+
+obj-$(CONFIG_ANDROID)		+= android/

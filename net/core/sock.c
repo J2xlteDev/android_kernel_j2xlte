@@ -2065,7 +2065,7 @@ EXPORT_SYMBOL(__sk_mem_schedule);
  *	__sk_reclaim - reclaim memory_allocated
  *	@sk: socket
  */
-void __sk_mem_reclaim(struct sock *sk)
+void __sk_mem_reclaim(struct sock *sk, int amount)
 {
 	sk_memory_allocated_sub(sk,
 				sk->sk_forward_alloc >> SK_MEM_QUANTUM_SHIFT);
