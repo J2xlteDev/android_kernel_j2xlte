@@ -76,16 +76,6 @@ struct avc_cache {
 	u32			latest_notif;	/* latest revocation notification */
 };
 
-struct avc_operation_decision_node {
-	struct operation_decision od;
-	struct list_head od_list;
-};
-
-struct avc_operation_node {
-	struct operation ops;
-	struct list_head od_head; /* list of operation_decision_node */
-};
-
 struct avc_callback_node {
 	int (*callback) (u32 event);
 	u32 events;
@@ -636,7 +626,7 @@ static int avc_latest_notif_update(int seqno, int is_insert)
 	spin_lock_irqsave(&notif_lock, flag);
 	if (is_insert) {
 		if (seqno < avc_cache.latest_notif) {
-			pr_debug(KERN_WARNING "SELinux: avc:  seqno %d < latest_notif %d\n",
+			printk(KERN_WARNING "SELinux: avc:  seqno %d < latest_notif %d\n",
 			       seqno, avc_cache.latest_notif);
 			ret = -EAGAIN;
 		}
@@ -1034,6 +1024,12 @@ int avc_has_extended_perms(u32 ssid, u32 tsid, u16 tclass, u32 requested,
 	int rc = 0, rc2;
 
 	xp_node = &local_xp_node;
+	BUG_ON(!requested);
+
+	rcu_read_lock();
+
+	node = avc_lookup(ssid, tsid, tclass);
+	if (unlikely(!node)) {
 		node = avc_compute_av(ssid, tsid, tclass, &avd, xp_node);
 	} else {
 		memcpy(&avd, &node->ae.avd, sizeof(avd));

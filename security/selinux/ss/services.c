@@ -615,30 +615,6 @@ static void type_attribute_bounds_av(struct context *scontext,
 	}
 }
 
-/* flag ioctl types that have operation permissions */
-void services_compute_operation_type(
-		struct operation *ops,
-		struct avtab_node *node)
-{
-	u8 type;
-	unsigned int i;
-
-	if (node->key.specified & AVTAB_OPTYPE) {
-		/* if allowing one or more complete types */
-		for (i = 0; i < ARRAY_SIZE(ops->type); i++)
-			ops->type[i] |= node->datum.u.ops->op.perms[i];
-	} else {
-		/* if allowing operations within a type */
-		type = node->datum.u.ops->type;
-		security_operation_set(ops->type, type);
-	}
-
-	/* If no ioctl commands are allowed, ignore auditallow and auditdeny */
-	if (node->key.specified & AVTAB_OPTYPE_ALLOWED ||
-			node->key.specified & AVTAB_OPNUM_ALLOWED)
-		ops->len = 1;
-}
-
 /*
  * flag which drivers have permissions
  * only looking for ioctl based extended permssions
@@ -1096,47 +1072,6 @@ allow:
 	goto out;
 }
 
-	tclass = unmap_class(orig_tclass);
-	if (unlikely(orig_tclass && !tclass)) {
-		if (policydb.allow_unknown)
-			goto allow;
-		goto out;
-	}
-
-
-	if (unlikely(!tclass || tclass > policydb.p_classes.nprim)) {
-		pr_warn_ratelimited("SELinux:  Invalid class %hu\n", tclass);
-		goto out;
-	}
-
-	avkey.target_class = tclass;
-	avkey.specified = AVTAB_OP;
-	sattr = flex_array_get(policydb.type_attr_map_array,
-				scontext->type - 1);
-	BUG_ON(!sattr);
-	tattr = flex_array_get(policydb.type_attr_map_array,
-				tcontext->type - 1);
-	BUG_ON(!tattr);
-	ebitmap_for_each_positive_bit(sattr, snode, i) {
-		ebitmap_for_each_positive_bit(tattr, tnode, j) {
-			avkey.source_type = i + 1;
-			avkey.target_type = j + 1;
-			for (node = avtab_search_node(&policydb.te_avtab, &avkey);
-			     node;
-			     node = avtab_search_node_next(node, avkey.specified))
-				services_compute_operation_num(od, node);
-
-			cond_compute_operation(&policydb.te_cond_avtab,
-						&avkey, od);
-		}
-	}
-out:
-	read_unlock(&policy_rwlock);
-	return;
-allow:
-	memset(od->allowed->perms, 0xff, sizeof(od->allowed->perms));
-	goto out;
-}
 /**
  * security_compute_av - Compute access vector decisions.
  * @ssid: source security identifier
